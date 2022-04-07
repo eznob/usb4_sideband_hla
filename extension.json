@@ -1,0 +1,13 @@
+{
+  "name": "tbt3_sbu",
+  "apiVersion": "1.0.0",
+  "author": "eznob",
+  "version": "0.0.1",
+  "description": "",
+  "extensions": {
+    "tbt3_sbu": {
+      "type": "HighLevelAnalyzer",
+      "entryPoint": "HighLevelAnalyzer.Hla"
+    }
+  }
+}
