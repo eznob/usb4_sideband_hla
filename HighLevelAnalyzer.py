@@ -79,12 +79,14 @@ class Hla(HighLevelAnalyzer):
 
     def LT_decode(self):
         print("LT")
-        print('raw_data %x' % self.raw_data_array)
-
+        for x in range(len(self.raw_data_array)):
+               print (self.raw_data_array[x].hex())
     def RT_decode(self):
         print("RT")
-        print('raw_data %x' % self.raw_data_array)
-
+        for x in range(len(self.raw_data_array)):
+               print (self.raw_data_array[x].hex())
     def AT_decode(self):
         print("AT")
-        print('raw_data %x' % self.raw_data_array)
+        for x in range(len(self.raw_data_array)):
+               print (self.raw_data_array[x].hex())
+
