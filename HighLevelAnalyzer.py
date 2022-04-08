@@ -12,10 +12,11 @@ from saleae.analyzers import HighLevelAnalyzer, AnalyzerFrame, StringSetting, Nu
 class Hla(HighLevelAnalyzer):
     # List of settings that a user can set for this High Level Analyzer.
     my_frame_string = str()
+    start_time_array = []
+    end_time_array = []
+    lt_start_time = None
     start_time = None
     end_time = None
-    lt_start_time = None
-    lt_end_time = None
     frame_flip = int()
     temp = int()
     status = int()
@@ -59,9 +60,10 @@ class Hla(HighLevelAnalyzer):
                 self.data_count_between_data_link_escape = 0
                 self.raw_data_array.clear()
                 self.start_time = frame.start_time
-                self.lt_start_time = frame.start_time
                 self.my_frame_string = None
                 self.my_frame_string = str()
+                self.start_time_array.append(frame.start_time)
+                self.end_time_array.clear()
                 return AnalyzerFrame("end", frame.start_time,frame.end_time, {
                         'input_type': self.temp
                     })
@@ -91,16 +93,17 @@ class Hla(HighLevelAnalyzer):
                     self.raw_data_array.clear()
                     temp_string = self.my_frame_string
                     self.start_time = frame.start_time
-                    self.lt_end_time = frame.start_time
                     self.my_frame_string = None
                     self.my_frame_string = str()
-                    return AnalyzerFrame("LT", self.lt_start_time,frame.end_time, {
+                    self.start_time_array.append(frame.start_time)
+                    return AnalyzerFrame("LT", self.start_time_array.pop(0),self.end_time_array.pop(), {
                         'input_type': temp_string
                     })
 
         else:
             self.data_count_between_data_link_escape = self.data_count_between_data_link_escape + 1
             self.raw_data_array.append(frame.data['data'])
+            self.end_time_array.append(frame.end_time)
         # Return the data frame itself
 
     def broadcast_or_addressed_RT_decode(self):
