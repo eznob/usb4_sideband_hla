@@ -14,7 +14,6 @@ class Hla(HighLevelAnalyzer):
     my_frame_string = str()
     start_time_array = []
     end_time_array = []
-    lt_start_time = None
     start_time = None
     end_time = None
     frame_flip = int()
@@ -75,6 +74,7 @@ class Hla(HighLevelAnalyzer):
                 if (stx_symbol & 0xc0) == 0x00:
                     self.end_time = frame.start_time
                     self.status = 0
+                    self.start_time_array.clear()
                     self.AT_decode()
                     return AnalyzerFrame("AT", self.start_time, self.end_time, {
                         'input_type': self.my_frame_string
@@ -82,6 +82,7 @@ class Hla(HighLevelAnalyzer):
                 elif (stx_symbol & 0xc0) == 0x40:
                     self.end_time = frame.start_time
                     self.status = 1
+                    self.start_time_array.clear()
                     self.broadcast_or_addressed_RT_decode()
                     return AnalyzerFrame("RT", self.start_time, self.end_time, {
                         'input_type': self.my_frame_string
