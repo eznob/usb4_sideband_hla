@@ -12,6 +12,7 @@ from saleae.analyzers import HighLevelAnalyzer, AnalyzerFrame, StringSetting, Nu
 class Hla(HighLevelAnalyzer):
     # List of settings that a user can set for this High Level Analyzer.
     my_frame_string = str()
+    decode_string = str()
     start_time_array = []
     end_time_array = []
     start_time = None
@@ -24,16 +25,16 @@ class Hla(HighLevelAnalyzer):
     # An optional list of types this analyzer produces, providing a way to customize the way frames are displayed in Logic 2.
     result_types = {
         'LT': {
-            'format': 'transaction: {{data.input_type}}'
+            'format': 'transaction: {{data.brief}},{{data.decode}}'
         },
         'AT': {
-            'format': 'transaction: {{data.input_type}}'
+            'format': 'transaction: {{data.brief}},{{data.decode}}'
         },
         'RT': {
-            'format': 'transaction: {{data.input_type}}'
+            'format': 'transaction: {{data.brief}},{{data.decode}}'
         },
         'end': {
-            'format': 'transaction: {{data.input_type}}'
+            'format': 'transaction: {{data.brief}},{{data.decode}}'
         }
 
     }
@@ -61,11 +62,10 @@ class Hla(HighLevelAnalyzer):
                 self.start_time = frame.start_time
                 self.my_frame_string = None
                 self.my_frame_string = str()
+                self.decode_string = None
+                self.decode_string = str()
                 self.start_time_array.append(frame.start_time)
                 self.end_time_array.clear()
-                return AnalyzerFrame("end", frame.start_time,frame.end_time, {
-                        'input_type': self.temp
-                    })
             else:
                 stx_symbol = int.from_bytes(
                     self.raw_data_array[0], byteorder='big')
@@ -77,7 +77,7 @@ class Hla(HighLevelAnalyzer):
                     self.start_time_array.clear()
                     self.AT_decode()
                     return AnalyzerFrame("AT", self.start_time, self.end_time, {
-                        'input_type': self.my_frame_string
+                        'brief': self.my_frame_string,'decode':self.decode_string
                     })
                 elif (stx_symbol & 0xc0) == 0x40:
                     self.end_time = frame.start_time
@@ -85,7 +85,7 @@ class Hla(HighLevelAnalyzer):
                     self.start_time_array.clear()
                     self.broadcast_or_addressed_RT_decode()
                     return AnalyzerFrame("RT", self.start_time, self.end_time, {
-                        'input_type': self.my_frame_string
+                        'brief': self.my_frame_string ,'decode':self.decode_string
                     })
                 elif (stx_symbol & 0xc0) == 0x80:
                     print(self.raw_data_array)
@@ -98,7 +98,7 @@ class Hla(HighLevelAnalyzer):
                     self.my_frame_string = str()
                     self.start_time_array.append(frame.start_time)
                     return AnalyzerFrame("LT", self.start_time_array.pop(0),self.end_time_array.pop(), {
-                        'input_type': temp_string
+                        'brief': temp_string,'decode':self.decode_string
                     })
 
         else:
@@ -193,6 +193,27 @@ class Hla(HighLevelAnalyzer):
             self.my_frame_string += ' meta data reg'
         elif data[0] == 12:
             self.my_frame_string += ' link config reg'
+            if (len(self.raw_data_array)-2) > 3:
+                if (data[1]& 0x01) == 0x1:
+                    self.decode_string += ' enable decision lane0'
+                if (data[1]& 0x02) == 0x2:
+                    self.decode_string += ' enable decision lane1'
+                if (data[2]& 0x01) == 0x1:
+                    self.decode_string += ' enable request lane0'
+                if (data[2]& 0x02) == 0x2:
+                    self.decode_string += ' enable request lane1'
+                if (data[2]& 0x10) == 0x10:
+                    self.decode_string += ' lane Bonding support'
+                if (data[2]& 0x20) == 0x20:
+                    self.decode_string += ' gen3 support'
+                if (data[2]& 0x40) == 0x40:
+                    self.decode_string += ' RS-FEC Request Gen2'
+                if (data[2]& 0x80) == 0x80:
+                    self.decode_string += ' RS-FEC Request Gen3'
+                if (data[3]& 0x01) == 0x01:
+                    self.decode_string += ' USB4 sideband channel support'
+                if (data[3]& 0x02) == 0x02:
+                    self.decode_string += ' TBT3 compatible speeds support'                
         elif data[0] == 13:
             self.my_frame_string += ' Tx FFE reg'
         else:
@@ -223,26 +244,26 @@ class Hla(HighLevelAnalyzer):
             self.my_frame_string += ' RT broadcast'
 
         if link_parameters_LSB & 0x01:
-            self.my_frame_string += ' USB4'
+            self.decode_string += ' USB4'
 
         if link_parameters_LSB & 0x04:
-            self.my_frame_string += ' RS FEC enabled'
+            self.decode_string += ' RS FEC enabled'
 
         if link_parameters_LSB & 0x08:
-            self.my_frame_string += ' SSC on'
+            self.decode_string += ' SSC on'
         else:
-            self.my_frame_string += ' SSC off'
+            self.decode_string += ' SSC off'
 
         if link_parameters_HSB & 0x01:
-            self.my_frame_string += ' lane 0 on'
+            self.decode_string += ' lane 0 on'
 
         if link_parameters_HSB & 0x02:
-            self.my_frame_string += ' lane 1 on'
+            self.decode_string += ' lane 1 on'
 
         if (link_parameters_HSB & 0xf0) == 0x10:
-            self.my_frame_string += ' gen 2 speed'
+            self.decode_string += ' gen 2 speed'
         elif (link_parameters_HSB & 0xf0) == 0x20:
-            self.my_frame_string += ' gen 3 speed'
+            self.decode_string += ' gen 3 speed'
 
     def LT_decode(self):
         self.my_frame_string+= ' LT'
@@ -254,3 +275,4 @@ class Hla(HighLevelAnalyzer):
             self.my_frame_string += ' LT_RESUME'
         elif (lane_sate_event & 0x0f) == 0x03:
             self.my_frame_string += ' LT_LR_off'
+        
